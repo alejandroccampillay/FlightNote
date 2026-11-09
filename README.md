@@ -1,74 +1,68 @@
 # FlightNote
 
-Pasaporte aeronáutico personal para iPhone. Registra todos los vuelos comerciales de tu vida y construye tu propia colección de aeronaves por matrícula. Funciona sin conexión y sin cuenta, y no tiene publicidad ni suscripciones.
+Pasaporte aeronáutico personal para iPhone (y Android). Registra todos los vuelos comerciales de tu vida y construye tu propia colección de aeronaves por matrícula. Funciona sin conexión y sin cuenta, y no tiene publicidad ni suscripciones.
 
 > Proyecto independiente inspirado funcionalmente en [Flown](https://flown-app.com/). No contiene código, diseño ni recursos de Flown.
 
 ## Estado
 
-**Fase 1: cimientos.** Incluye el modelo de datos, la base de referencia, el dominio con sus tests, el esqueleto de la app y el CI. Ver [docs/](docs/).
+**Fase 1: cimientos (Expo).** Ver [docs/fase-1-resultados.md](docs/fase-1-resultados.md).
+
+## Tecnología
+
+Expo SDK 58 · React Native · TypeScript · Expo Router · expo-sqlite. Ver [ADR 0003](docs/adr/0003-cambio-a-expo.md).
+
+La versión nativa en Swift quedó archivada en la rama `archivo/swift-ios`.
 
 ## Estructura
 
 ```
-App/                      App iOS (SwiftUI) y tests de UI
-Packages/FlightNoteKit/   Módulos Swift (SPM)
-  FNDomain                Lógica pura: geodesia, matrículas, horarios. Sin dependencias.
-  FNReferenceData         Base aeronáutica SQLite de solo lectura (aeropuertos, aerolíneas, tipos, prefijos)
-  FNPersistence           Datos del usuario con SwiftData (vuelos, aeronaves, fotos)
-Tools/reference-data/     Script que genera la base de referencia a partir de fuentes públicas
-project.yml               Definición del proyecto Xcode (XcodeGen)
-.github/workflows/ci.yml  Compilación, tests, capturas e .ipa sin firmar en macOS
-docs/                     Investigación, ADR y documentación
+src/app/            Pantallas (Expo Router, pestañas nativas)
+src/components/     Componentes de interfaz
+src/domain/         Lógica pura: geodesia, matrículas, horarios, búsqueda (+ tests)
+src/data/           SQLite: base de referencia, datos del usuario, migraciones (+ tests)
+assets/data/        reference.sqlite (generada)
+Tools/reference-data/  Script que genera la base de referencia a partir de fuentes públicas
+docs/               Investigación, ADR y resultados por fase
 ```
 
-## Compilar
-
-### Con un Mac
-
-Requisitos: Xcode 16 o superior y [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+## Desarrollo
 
 ```bash
-brew install xcodegen
+npm install
 ```
 
 ```bash
-xcodegen generate
+npx expo start
+```
+
+Escanea el QR con la cámara del iPhone para abrir la app en **Expo Go** (misma Wi-Fi, o `npx expo start --tunnel`).
+
+Comprobaciones:
+
+```bash
+npm run check
 ```
 
 ```bash
-open FlightNote.xcodeproj
+npx expo lint
 ```
 
-Para pasar los tests del paquete sin Xcode:
-
-```bash
-cd Packages/FlightNoteKit && swift test
-```
-
-### Sin Mac (CI)
-
-Cada push a GitHub ejecuta `.github/workflows/ci.yml` en macOS, que:
-
-1. pasa los tests del paquete;
-2. genera el proyecto Xcode;
-3. pasa los tests de la app en el simulador;
-4. exporta capturas de pantalla;
-5. genera `FlightNote-unsigned.ipa`.
-
-Los resultados se descargan desde la pestaña **Actions** del repositorio, en el apartado *Artifacts*.
+`npm run check` ejecuta el typecheck y los tests (`node --test`; no necesita simulador).
 
 ## Regenerar la base de referencia
 
 ```bash
-python Tools/reference-data/build_reference_db.py
+python -m pip install -r Tools/reference-data/requirements.txt
 ```
 
-El script descarga los datos públicos y escribe `Packages/FlightNoteKit/Sources/FNReferenceData/Resources/reference.sqlite`. Ver [Tools/reference-data/README.md](Tools/reference-data/README.md).
+```bash
+npm run build:reference
+```
 
 ## Licencias de datos
 
 - **Aeropuertos y países:** [OurAirports](https://ourairports.com/data/), dominio público.
 - **Aerolíneas:** [OpenFlights](https://openflights.org/data), Open Database License (ODbL).
-- **Zonas horarias:** calculadas a partir de coordenadas con `timezonefinder` (datos de timezone-boundary-builder, ODbL).
-- **Tipos de aeronave y prefijos de matrícula:** lista propia (`Tools/reference-data/*.json`).
+- **Zonas horarias:** `timezonefinder` (datos de timezone-boundary-builder, ODbL).
+- **Tipos de aeronave y prefijos de matrícula:** listas propias (`Tools/reference-data/*.json`).

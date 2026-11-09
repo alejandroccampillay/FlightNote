@@ -11,117 +11,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
-    name: Compilar, probar y empaquetar
-    runs-on: macos-15
-    timeout-minutes: 60
+  check:
+    name: Tipos, lint, tests y bundle iOS
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
-      - name: Seleccionar Xcode estable más reciente
-        uses: maxim-lobanov/setup-xcode@v1
+      - uses: actions/setup-node@v4
         with:
-          xcode-version: latest-stable
+          node-version: 24
+          cache: npm
 
-      - name: Versiones
-        run: |
-          xcodebuild -version
-          swift --version
-
-      - name: Tests del paquete (dominio, datos de referencia, persistencia)
-        working-directory: Packages/FlightNoteKit
-        run: swift test
-
-      - name: Generar proyecto Xcode
-        run: |
-          brew install xcodegen
-          xcodegen generate
-
-      - name: Elegir simulador de iPhone
-        id: sim
-        run: |
-          UDID=$(xcrun simctl list devices available --json | python3 -c '
-          import json, sys
-          data = json.load(sys.stdin)["devices"]
-          ios = sorted((k for k in data if "iOS" in k), key=lambda k: [int(x) for x in k.split("iOS-")[-1].split("-")], reverse=True)
-          for runtime in ios:
-              for d in data[runtime]:
-                  if d["name"].startswith("iPhone") and "Pro" in d["name"] and "Max" not in d["name"]:
-                      print(d["udid"]); sys.exit()
-          for runtime in ios:
-              for d in data[runtime]:
-                  if d["name"].startswith("iPhone"):
-                      print(d["udid"]); sys.exit()
-          ')
-          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
-          xcrun simctl list devices available | grep "$UDID"
-
-      - name: Tests de UI en simulador
-        run: |
-          set -o pipefail
-          xcodebuild test \
-            -project FlightNote.xcodeproj \
-            -scheme FlightNote \
-            -destination "id=${{ steps.sim.outputs.udid }}" \
-            -resultBundlePath build/UITests.xcresult \
-            CODE_SIGNING_ALLOWED=NO
-
-      - name: Exportar capturas de pantalla
-        if: always()
-        run: |
-          mkdir -p build/screenshots
-          if [ -d build/UITests.xcresult ]; then
-            xcrun xcresulttool export attachments --path build/UITests.xcresult --output-path build/screenshots || true
-            # Renombrar con el nombre del adjunto (claro-Vuelos.png, …) usando manifest.json.
-            python3 - <<'EOF'
-          import json, os, shutil
-          root = "build/screenshots"
-          manifest = os.path.join(root, "manifest.json")
-          if os.path.exists(manifest):
-              for test in json.load(open(manifest)):
-                  for att in test.get("attachments", []):
-                      src = os.path.join(root, att["exportedFileName"])
-                      name = att.get("suggestedHumanReadableName") or att["exportedFileName"]
-                      base = name.split("_")[0] if "_" in name else os.path.splitext(name)[0]
-                      if os.path.exists(src):
-                          shutil.move(src, os.path.join(root, base + os.path.splitext(src)[1]))
-          EOF
-          fi
-          ls -la build/screenshots
-
-      - name: Subir capturas
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: screenshots
-          path: build/screenshots
-          if-no-files-found: warn
-
-      - name: Compilar .ipa sin firmar
-        run: |
-          set -o pipefail
-          xcodebuild build \
-            -project FlightNote.xcodeproj \
-            -scheme FlightNote \
-            -configuration Release \
-            -sdk iphoneos \
-            -destination "generic/platform=iOS" \
-            -derivedDataPath build/DerivedData \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
-          mkdir -p build/ipa/Payload
-          cp -R build/DerivedData/Build/Products/Release-iphoneos/FlightNote.app build/ipa/Payload/
-          (cd build/ipa && zip -qry ../FlightNote-unsigned.ipa Payload)
-          ls -la build/FlightNote-unsigned.ipa
-
-      - name: Subir .ipa
-        uses: actions/upload-artifact@v4
-        with:
-          name: FlightNote-unsigned-ipa
-          path: build/FlightNote-unsigned.ipa
-
-      - name: Subir resultados de tests
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: build/UITests.xcresult
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx expo lint
+      - run: npm test
+      - name: Exportar bundle de iOS (comprueba que Metro resuelve todo)
+        run: npx expo export --platform ios --output-dir dist
+        env:
+          CI: 1

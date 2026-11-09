@@ -1,61 +1,52 @@
-# Fase 1 — Cimientos: resultados
+# Fase 1 — Cimientos (Expo): resultados
 
-**Fecha:** 2026-11-08
+**Fecha:** 2026-11-09 · Ver [ADR 0003](adr/0003-cambio-a-expo.md) para el cambio de Swift a Expo.
 
-## Implementado
+## Implementado y verificado
 
-| Pieza | Ubicación | Estado |
+| Pieza | Ubicación | Verificación |
 |---|---|---|
-| Repositorio git, `.gitignore`, README | raíz | ✅ |
-| Base de referencia: 6.116 aeropuertos, 6.141 aerolíneas, 110 tipos y 165 prefijos de matrícula (1,8 MB) | `Tools/reference-data/`, `…/FNReferenceData/Resources/reference.sqlite` | ✅ Generada y verificada en local con Python |
-| Dominio: distancia ortodrómica, arcos, unidades, matrículas, país por prefijo, horas locales, duración, normalización de búsqueda | `Packages/FlightNoteKit/Sources/FNDomain` | ⏳ Pendiente de compilar en CI |
-| Acceso a la base de referencia (búsqueda y consultas por código) | `…/Sources/FNReferenceData` | ⏳ Pendiente de compilar en CI |
-| Modelo SwiftData v1 (Flight, Aircraft, FlightPhoto), plan de migraciones y `AircraftRegistry` (sin duplicados + fusión) | `…/Sources/FNPersistence` | ⏳ Pendiente de compilar en CI |
-| Tests: unos 40 casos con Swift Testing | `Packages/FlightNoteKit/Tests` | ⏳ Pendiente de ejecutar en CI |
-| App esqueleto: 5 pestañas con estados vacíos y Ajustes con los datos de la base | `App/FlightNote` | ⏳ Pendiente de compilar en CI |
-| Test de UI que recorre las pestañas y guarda capturas en claro y oscuro | `App/FlightNoteUITests` | ⏳ Pendiente de ejecutar en CI |
-| Proyecto XcodeGen | `project.yml` | ✅ YAML válido |
-| CI: tests del paquete, tests de UI, capturas, `.ipa` sin firmar | `.github/workflows/ci.yml` | ✅ YAML válido · ⏳ sin ejecutar |
+| Proyecto Expo SDK 58 con Expo Router y 5 pestañas nativas | `src/app/` | `tsc` ✅ · `expo lint` ✅ · bundle iOS exportado ✅ · `expo-doctor` 20/20 ✅ |
+| Dominio: distancias, arcos, unidades, matrículas, país por prefijo, horas locales, duración, búsqueda | `src/domain/` | 12 tests ✅ |
+| Base de referencia: 6.116 aeropuertos, 6.141 aerolíneas, 110 tipos, 165 prefijos | `assets/data/reference.sqlite`, `src/data/referenceRepository.ts` | 6 tests contra la base real ✅ · incluida en el bundle ✅ |
+| Datos del usuario: esquema v1, migraciones, vuelos y aeronaves sin duplicados, fusión, edición sin perder fotos | `src/data/userSchema.ts`, `src/data/userRepository.ts` | 7 tests ✅ (incluye el ejemplo LA800 SCL→MAD con CC-BGG) |
+| Apertura de ambas bases al arrancar | `src/data/DataProvider.tsx` | ⏳ Pendiente de probar en el iPhone |
+| Pantallas: Pasaporte (totales), Vuelos (lista), Mi flota (fichas), Estadísticas (vacía), Ajustes (base de referencia, recuento y botón "vuelo de ejemplo") | `src/app/*.tsx` | ⏳ Pendiente de probar en el iPhone |
+| CI en GitHub Actions | `.github/workflows/ci.yml` | ⏳ Se ejecutará con el próximo push |
 
-## Verificado en local (Windows)
+**Total: 25 tests en verde en local** (`npm test`).
 
-- El script de la base de referencia se ejecuta de principio a fin.
-- Los datos de prueba son correctos:
-  - SCL → America/Santiago, MAD → Europe/Madrid.
-  - "LA" → LATAM Airlines, "JA" → JetSMART.
-  - La búsqueda "barajas" → MAD.
-- Las distancias que esperan los tests (SCL–MAD 10.719,3 km; JFK–LHR 5.539,8 km; SYD–AKL 2.159,1 km) están calculadas de forma independiente en Python.
-- Las consultas SQL de los tests de `FNReferenceData` dan el resultado esperado.
+## Cómo probarla en el iPhone
 
-## No verificado todavía
-
-**Ningún código Swift se ha compilado aún**: no hay toolchain Swift en este equipo. La Fase 1 se dará por cerrada cuando el CI esté en verde. Lo previsible es que la primera ejecución saque algún error de compilación menor que habrá que corregir.
-
-## Cómo ejecutar el CI
-
-1. Crea un repositorio vacío en GitHub (público para tener minutos de macOS gratis).
-2. Conecta el repositorio local y haz push:
+1. Instala **Expo Go** desde la App Store.
+2. En el PC, dentro de la carpeta del proyecto:
 
    ```bash
-   git remote add origin https://github.com/<usuario>/FlightNote.git
+   npm install
    ```
 
    ```bash
-   git push -u origin main
+   npx expo start
    ```
 
-3. En la pestaña **Actions** aparece la ejecución **CI**. Al terminar, la sección *Artifacts* tiene:
-   - `screenshots`: capturas de las 5 pestañas en claro y oscuro;
-   - `FlightNote-unsigned-ipa`: la app para instalar por sideloading;
-   - `test-results` (solo si algo falla).
+3. Escanea con la **cámara del iPhone** el código QR que aparece en la terminal. Se abrirá en Expo Go.
+4. El iPhone y el PC tienen que estar en la **misma Wi-Fi**. Si Windows pregunta por el firewall para Node.js, permite el acceso en redes privadas. Si aun así no conecta:
 
-## Limitaciones conocidas (registro)
+   ```bash
+   npx expo start --tunnel
+   ```
+
+5. Prueba de punta a punta:
+   - Ajustes → **"Añadir vuelo de ejemplo (LA800)"**.
+   - Después, Vuelos, Mi flota y Pasaporte deben mostrar el vuelo SCL→MAD de 10.719 km y la ficha CC-BGG.
+
+## Limitaciones conocidas
 
 | # | Limitación | Plan |
 |---|---|---|
-| L1 | Sin Mac: la compilación solo es posible en CI | Aceptado (ADR 0001) |
-| L2 | Sin cuenta de desarrollador: no hay TestFlight ni iCloud | Aceptado (ADR 0001) |
-| L3 | Las aerolíneas de OpenFlights están desactualizadas | Correcciones en `airline_overrides.json`; siempre se puede escribir a mano |
-| L4 | Si el almacén del usuario no se puede abrir, la app se cierra (`fatalError`) | Pantalla de recuperación en la Fase 8 |
-| L5 | La lista de tipos de aeronave no es exhaustiva (110 tipos) | Ampliar en la Fase 6 |
-| L6 | No hay icono de app | Fase 7 (diseño) |
+| L1 | No hay formulario de alta de vuelos (solo el vuelo de ejemplo) | Fase 2 |
+| L2 | Sin cuenta de Apple: no hay app independiente ni App Store; se usa Expo Go | Al tener cuenta: EAS Build |
+| L3 | Las aerolíneas de OpenFlights están desactualizadas | `airline_overrides.json`; siempre se puede escribir a mano |
+| L4 | Las copias antiguas de la base de referencia no se borran al actualizar | Limpieza en una fase posterior |
+| L5 | Hay iconos y una pantalla de inicio provisionales (los de la plantilla de Expo) | Fase 7 (diseño) |
+| L6 | No hay sincronización con iCloud | Exportación y copias de seguridad en la Fase 8 |

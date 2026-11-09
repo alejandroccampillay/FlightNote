@@ -22,3 +22,22 @@ Tools/reference-data/.cache/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Expo / Node
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.metro-health-check*
+*.tsbuildinfo
+.env*.local
+npm-debug.*
+# Carpetas nativas generadas (CNG)
+/ios
+/android
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision

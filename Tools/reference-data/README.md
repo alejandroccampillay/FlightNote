@@ -1,6 +1,6 @@
 # Base de referencia aeronáutica
 
-`build_reference_db.py` genera `Packages/FlightNoteKit/Sources/FNReferenceData/Resources/reference.sqlite`.
+`build_reference_db.py` genera `assets/data/reference.sqlite` y `src/data/referenceVersion.generated.ts` (nombre versionado del fichero en el dispositivo).
 
 Es un SQLite de **solo lectura** que va dentro de la app. Funciona sin conexión y nunca se mezcla con los datos del usuario.
 
@@ -31,7 +31,7 @@ Opciones:
 | `meta` | — | Versión de esquema, fecha de generación, fuentes |
 
 - La zona horaria de cada aeropuerto se calcula a partir de sus coordenadas con `timezonefinder`.
-- `search_text` está en minúsculas y sin diacríticos, igual que `SearchText.fold` en la app.
+- `search_text` está en minúsculas y sin diacríticos, igual que `foldText` en `src/domain/search.ts`.
 
 ## Limitaciones conocidas
 

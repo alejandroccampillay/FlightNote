@@ -26,7 +26,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
-DEFAULT_OUT = REPO / "Packages/FlightNoteKit/Sources/FNReferenceData/Resources/reference.sqlite"
+DEFAULT_OUT = REPO / "assets/data/reference.sqlite"
+VERSION_TS = REPO / "src/data/referenceVersion.generated.ts"
 
 SOURCES = {
     "airports.csv": "https://davidmegginson.github.io/ourairports-data/airports.csv",
@@ -254,6 +255,16 @@ def build(out: Path, cache_dir: Path, offline: bool) -> None:
     db.commit()
     db.execute("VACUUM")
     db.close()
+
+    # La app copia la base al dispositivo con un nombre que incluye la versión: así una
+    # actualización de la app instala la base nueva en lugar de reutilizar la copia antigua.
+    stamp = meta["built_at"].replace("-", "").replace(":", "").replace("T", "-").rstrip("Z")
+    VERSION_TS.write_text(
+        "// Generado por Tools/reference-data/build_reference_db.py. No editar a mano.\n"
+        f"export const REFERENCE_DB_BUILT_AT = '{meta['built_at']}';\n"
+        f"export const REFERENCE_DB_FILENAME = 'reference-v{SCHEMA_VERSION}-{stamp}.sqlite';\n",
+        encoding="utf-8",
+    )
 
     size_mb = out.stat().st_size / 1_048_576
     print(f"OK {out} — {n_airports} aeropuertos, {n_airlines} aerolíneas, {len(types)} tipos, "
