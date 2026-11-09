@@ -1,0 +1,11 @@
+[
+  {"icao": "LAN", "iata": "LA", "name": "LATAM Airlines", "alias": "LAN Airlines", "country": "CL", "active": true},
+  {"icao": "TAM", "iata": "JJ", "name": "LATAM Airlines Brasil", "alias": "TAM Linhas Aéreas", "country": "BR", "active": true},
+  {"icao": "LPE", "iata": "LP", "name": "LATAM Airlines Perú", "alias": "LAN Perú", "country": "PE", "active": true},
+  {"icao": "ARE", "iata": "4C", "name": "LATAM Airlines Colombia", "alias": "LAN Colombia", "country": "CO", "active": true},
+  {"icao": "LNE", "iata": "XL", "name": "LATAM Airlines Ecuador", "alias": "LAN Ecuador", "country": "EC", "active": true},
+  {"icao": "JAT", "iata": "JA", "name": "JetSMART", "country": "CL", "active": true},
+  {"icao": "BON", "active": false},
+  {"icao": "ITY", "iata": "AZ", "name": "ITA Airways", "country": "IT", "active": true},
+  {"icao": "AZA", "active": false}
+]

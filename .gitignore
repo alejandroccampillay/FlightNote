@@ -1,0 +1,24 @@
+# Xcode (el proyecto se genera con XcodeGen)
+*.xcodeproj/
+*.xcworkspace/
+!Packages/**/*.xcworkspace/
+xcuserdata/
+DerivedData/
+build/
+*.xcresult
+*.ipa
+
+# SwiftPM
+.build/
+.swiftpm/
+Package.resolved
+
+# Python / herramientas
+__pycache__/
+*.pyc
+.venv/
+Tools/reference-data/.cache/
+
+# Sistema
+.DS_Store
+Thumbs.db
